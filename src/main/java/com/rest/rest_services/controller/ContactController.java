@@ -9,6 +9,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -18,9 +20,12 @@ public class ContactController {
     private final ContactProxy contactProxy;
     private final RestTemplate restTemplate;
 
-    public ContactController(ContactProxy contactProxy, RestTemplate restTemplate) {
+    private final WebClient webClient;
+
+    public ContactController(ContactProxy contactProxy, RestTemplate restTemplate, WebClient webClient) {
         this.contactProxy = contactProxy;
         this.restTemplate = restTemplate;
+        this.webClient = webClient;
     }
 
     @GetMapping("/getMessages")
@@ -37,6 +42,15 @@ public class ContactController {
         ResponseEntity<Response> responseEntity = restTemplate.exchange(uri, HttpMethod.POST,
                 httpEntity, Response.class);
         return responseEntity;
-
+        }
+    @PostMapping("/saveMessage")
+    public Mono<Response>  saveMessage(@RequestBody Contact contact) {
+        String uri = "http://localhost:8080/api/contact/saveMsg";
+        return webClient.post().uri(uri)
+                .header("invocationFrom", "WebClient")
+                .body(Mono.just(contact),Contact.class)
+                .retrieve()
+                .bodyToMono(Response.class);
     }
+
 }
